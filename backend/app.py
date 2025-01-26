@@ -94,6 +94,10 @@ def search(query, docs, k):
 # Initialize Flask app
 app = Flask(__name__)
 
+@app.route('/')
+def home():
+    return "Hello, World!"
+
 @app.route('/search', methods=['POST'])
 def search_documents():
     try:
