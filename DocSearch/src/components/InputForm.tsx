@@ -1,18 +1,16 @@
 import React, { useState } from 'react';
 import { FaLink, FaSearch } from 'react-icons/fa';
 
-const InputForm = ({ onSearch }) => {
+interface InputFormProps {
+  onSearch: (searchResults: any[]) => void;  // Define the onSearch prop type
+}
+
+const InputForm = ({ onSearch } : InputFormProps) => {
   const [file, setFile] = useState(null);
   const [url, setUrl] = useState('');
   const [textInput, setTextInput] = useState('');
   const [query, setQuery] = useState('');
   const [outputCount, setOutputCount] = useState(1);
-
-//   const handleSubmit = (e) => {
-//     e.preventDefault();
-//     const searchResults = []; // Placeholder for actual search results
-//     onSearch(searchResults);
-//   };
 
     const readFileContent = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -34,31 +32,56 @@ const InputForm = ({ onSearch }) => {
     if (file) {
       try {
         const fileContent = await readFileContent(file);
-        combinedSources.push(fileContent);
+        const fileContentStrings = fileContent.split('\n\n'); // Split content by paragraphs
+        combinedSources.push(...fileContentStrings); // Add each paragraph as a separate string
       } catch (error) {
         console.error('Error reading file:', error);
       }
     }
 
+    
+    // Process text input
+    if (textInput.trim() !== '') {
+        const textInputStrings = textInput.split('\n\n'); // Split content by paragraphs
+        combinedSources.push(...textInputStrings); // Add each paragraph as a separate string
+    }
+    
     // Process URL input
     if (url.trim() !== '') {
       combinedSources.push(`URL: ${url}`); // Add URL as a string (you can fetch content from the URL if needed)
     }
-
-    // Process text input
-    if (textInput.trim() !== '') {
-      combinedSources.push(textInput);
-    }
-
     // Ensure there's at least one source
-    if (combinedSources.length === 0) {
+    if (combinedSources.length === 0 && query.trim() === '') {
       alert('Please provide at least one input source (File, URL, or Text).');
       return;
     }
 
-    // Pass the combined sources and query to your model
-    const searchResults = []; // Replace with actual call to your model
-    onSearch(searchResults.slice(0, outputCount)); // Pass the desired number of results to onSearch
+    const requestBody = {
+      query: query,
+      docs: combinedSources,
+      url: url,
+      outputCount: outputCount,
+    };
+
+    try {
+      // Make API call to fetch search results
+      const response = await fetch('https://document-search-r3wt.onrender.com/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody), // Send data to API
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        onSearch(data.results); 
+      } else {
+        console.error('Failed to fetch search results:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
   };
 
 

@@ -6,6 +6,9 @@ import re
 import spacy
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
+import requests
+from bs4 import BeautifulSoup
+
 
 # Import your model functions
 nltk.download("stopwords")
@@ -90,6 +93,13 @@ def search(query, docs, k):
     
     return result
 
+def extract_text_from_website(url):
+    response = requests.get(url)
+    soup = BeautifulSoup(response.content, "html.parser")
+    paragraphs = soup.find_all('p')  # Extracts all <p> tags (paragraphs)
+    docs = [p.get_text(strip=True) for p in paragraphs if p.get_text(strip=True)]
+    return docs
+
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -103,12 +113,17 @@ def search_documents():
     try:
         # Get request data
         data = request.get_json()
+
         query = data.get("query", "")
         docs = data.get("docs", [])
+        url = data.get("url", "")
         k = data.get("k", 5)
 
-        if not query or not docs:
+        if not query or ( not docs and not url ):
             return jsonify({"error": "Both 'query' and 'docs' are required"}), 400
+        
+        if url:
+            docs.extend(extract_text_from_website(url))
 
         # Perform search
         response = search(query, docs, k)
