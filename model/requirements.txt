@@ -1,0 +1,8 @@
+nltk
+pandas
+numpy
+scikit-learn
+requests
+beautifulsoup4
+PyPDF2
+spacy
