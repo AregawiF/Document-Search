@@ -71,7 +71,7 @@ def lemmatize_text_spacy(text):
     return lemmatized_text
 
 
-def get_similar_articles(q, df, vectorizer, k, query, docs):
+def get_similar_articles(q, df, vectorizer, k, docs):
     q = [q]
     q_vec = vectorizer.transform(q).toarray().reshape(df.shape[0],)
     sim = {}
@@ -97,4 +97,4 @@ def search(query, docs, k):
     q = lemmatize_text_spacy(query)
 
 
-    return get_similar_articles(q, df, vectorizer, k, query, docs)
+    return get_similar_articles(q, df, vectorizer, k, docs)
