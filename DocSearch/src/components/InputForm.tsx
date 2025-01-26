@@ -51,8 +51,13 @@ const InputForm = ({ onSearch } : InputFormProps) => {
       combinedSources.push(`URL: ${url}`); // Add URL as a string (you can fetch content from the URL if needed)
     }
     // Ensure there's at least one source
-    if (combinedSources.length === 0 && query.trim() === '') {
+    if (combinedSources.length === 0 && url.trim() === '') {
       alert('Please provide at least one input source (File, URL, or Text).');
+      return;
+    }
+    
+    if (query.trim() === '') {
+      alert('Please provide a query.');
       return;
     }
 
@@ -75,6 +80,7 @@ const InputForm = ({ onSearch } : InputFormProps) => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Search results:', data.results);
         onSearch(data.results); 
       } else {
         console.error('Failed to fetch search results:', response.statusText);

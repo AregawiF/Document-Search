@@ -12,6 +12,7 @@ function App() {
   const [results, setResults] = useState<result[]>([]);
 
   const handleSearch = (searchResults: result[]) => {
+    console.log(searchResults);
     setResults(searchResults);
   };
 

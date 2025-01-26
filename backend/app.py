@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import nltk
 import pandas as pd
 import numpy as np
@@ -103,6 +104,8 @@ def extract_text_from_website(url):
 
 # Initialize Flask app
 app = Flask(__name__)
+
+CORS(app)
 
 @app.route('/')
 def home():
