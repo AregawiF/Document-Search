@@ -11,6 +11,8 @@ const InputForm = ({ onSearch } : InputFormProps) => {
   const [textInput, setTextInput] = useState('');
   const [query, setQuery] = useState('');
   const [outputCount, setOutputCount] = useState(1);
+  const [loading, setLoading] = useState(false); // Loading state
+
 
     const readFileContent = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -43,13 +45,13 @@ const InputForm = ({ onSearch } : InputFormProps) => {
     // Process text input
     if (textInput.trim() !== '') {
         const textInputStrings = textInput.split('\n\n'); // Split content by paragraphs
-        combinedSources.push(...textInputStrings); // Add each paragraph as a separate string
-    }
+        
+        // Clean up each text input string to avoid any invalid characters
+        const cleanedInputStrings = textInputStrings.map((str) => str.replace(/[^\x20-\x7E]/g, "")); // Remove non-ASCII characters
+        
+        combinedSources.push(...cleanedInputStrings); // Add each cleaned paragraph as a separate string
+        }
     
-    // Process URL input
-    if (url.trim() !== '') {
-      combinedSources.push(`URL: ${url}`); // Add URL as a string (you can fetch content from the URL if needed)
-    }
     // Ensure there's at least one source
     if (combinedSources.length === 0 && url.trim() === '') {
       alert('Please provide at least one input source (File, URL, or Text).');
@@ -68,8 +70,9 @@ const InputForm = ({ onSearch } : InputFormProps) => {
       outputCount: outputCount,
     };
 
+    setLoading(true);
+
     try {
-      // Make API call to fetch search results
       const response = await fetch('https://document-search-r3wt.onrender.com/search', {
         method: 'POST',
         headers: {
@@ -81,12 +84,15 @@ const InputForm = ({ onSearch } : InputFormProps) => {
       if (response.ok) {
         const data = await response.json();
         console.log('Search results:', data.results);
-        onSearch(data.results); 
+        onSearch(data.results.slice(0, outputCount)); // Pass search results to parent component
       } else {
         console.error('Failed to fetch search results:', response.statusText);
       }
+
     } catch (error) {
       console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -104,7 +110,7 @@ const InputForm = ({ onSearch } : InputFormProps) => {
             type="file"
             accept=".txt,.docx,.pdf"
             onChange={(e) => setFile(e.target.files[0])}
-            className="flex-1 text-gray-700 text-sm outline-none"
+            className="flex-1 text-gray-700 text-lg outline-none"
           />
         </div>
 
@@ -116,7 +122,7 @@ const InputForm = ({ onSearch } : InputFormProps) => {
             placeholder="Enter website URL"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            className="flex-1 ml-3 text-gray-700 text-sm outline-none"
+            className="flex-1 ml-3 text-gray-700 text-lg outline-none"
           />
         </div>
 
@@ -125,7 +131,7 @@ const InputForm = ({ onSearch } : InputFormProps) => {
           placeholder="Enter text..."
           value={textInput}
           onChange={(e) => setTextInput(e.target.value)}
-          className="border border-gray-300 rounded-lg w-full h-80 p-4 text-sm text-gray-700 outline-none resize-none hover:border-blue-400 focus:ring-2 focus:ring-blue-400"
+          className="border border-gray-300 rounded-lg w-full h-80 p-4 text-lg text-gray-700 outline-none resize-none hover:border-blue-400 focus:ring-2 focus:ring-blue-400"
         />
 
         {/* Query Input */}
@@ -136,13 +142,13 @@ const InputForm = ({ onSearch } : InputFormProps) => {
             placeholder="Enter query"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="flex-1 ml-3 text-gray-700 text-sm outline-none"
+            className="flex-1 ml-3 text-gray-700 text-lg outline-none"
           />
         </div>
 
         {/* Output Count */}
         <div className="flex items-center space-x-3">
-            <span className="text-gray-700 text-sm">Number of outputs:</span>
+            <span className="text-gray-700 text-lg">Number of outputs:</span>
           <button
             type="button"
             onClick={() => setOutputCount(Math.max(1, outputCount - 1))}
@@ -165,13 +171,21 @@ const InputForm = ({ onSearch } : InputFormProps) => {
           </button>
         </div>
 
+        {/* Loading Indicator */}
+        {loading && (
+            <div className="flex justify-center items-center">
+            <div className="w-8 h-8 border-4 border-t-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
+            </div>
+        )}
+
         {/* Submit Button */}
         <button
           type="submit"
           className="w-full bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition"
-        >
+          >
           Search
         </button>
+
       </form>
     </div>
   );
