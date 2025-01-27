@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
 import { FaLink, FaSearch } from 'react-icons/fa';
+import { pdfjs } from 'react-pdf';
+import { useEffect } from 'react';
+
+
+pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+
 
 interface InputFormProps {
   onSearch: (searchResults: any[]) => void;  // Define the onSearch prop type
@@ -13,6 +19,12 @@ const InputForm = ({ onSearch } : InputFormProps) => {
   const [outputCount, setOutputCount] = useState(1);
   const [loading, setLoading] = useState(false); // Loading state
 
+  // useEffect(() => {
+  //     // Setting up the worker
+  //        pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
+
+  //   }, []);
+
 
     const readFileContent = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -23,6 +35,34 @@ const InputForm = ({ onSearch } : InputFormProps) => {
     });
   };
 
+  const extractTextFromPDF = async (file: File) => {
+       return new Promise<string>((resolve, reject) => {
+
+        const reader = new FileReader();
+         reader.onload = async (e) => {
+          try {
+               const loadingTask = pdfjs.getDocument(e.target?.result as string);
+                 const pdf = await loadingTask.promise;
+
+              let allText = '';
+              for(let i = 1; i <= pdf.numPages; i++){
+                  const page = await pdf.getPage(i);
+                  const textContent = await page.getTextContent();
+                  const pageText = textContent.items.map(item => item.str).join('');
+                   allText += pageText;
+
+               }
+              resolve(allText);
+             }catch(error){
+                reject(error);
+                console.error("Failed to extract text from PDF", error);
+
+              }
+        }
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    })
+   };
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,9 +73,22 @@ const InputForm = ({ onSearch } : InputFormProps) => {
     // Process file input
     if (file) {
       try {
+
+        let fileContent = '';
+        if(file.type === 'application/pdf'){
+              fileContent = await extractTextFromPDF(file);
+
+
+        } else {
         const fileContent = await readFileContent(file);
-        const fileContentStrings = fileContent.split('\n\n'); // Split content by paragraphs
-        combinedSources.push(...fileContentStrings); // Add each paragraph as a separate string
+        const fileContentStrings = fileContent.split('\n'); // Split content by paragraphs
+        const cleanedFileContent = fileContentStrings.map((str) => str.replace(/[^\x20-\x7E\n\\]/g, "").trim()).filter(str => str.length > 0);
+
+
+        combinedSources.push(...cleanedFileContent); // Add each paragraph as a separate string
+        console.log('File content:', fileContent);
+        console.log('File content strings:', cleanedFileContent);
+      }
       } catch (error) {
         console.error('Error reading file:', error);
       }
@@ -44,10 +97,13 @@ const InputForm = ({ onSearch } : InputFormProps) => {
     
     // Process text input
     if (textInput.trim() !== '') {
-        const textInputStrings = textInput.split('\n\n'); // Split content by paragraphs
+        const textInputStrings = textInput.split('\n'); // Split content by paragraphs
         
         // Clean up each text input string to avoid any invalid characters
-        const cleanedInputStrings = textInputStrings.map((str) => str.replace(/[^\x20-\x7E]/g, "")); // Remove non-ASCII characters
+        
+        const cleanedInputStrings = textInputStrings.map((str) => str.replace(/[^\x20-\x7E\n\\]/g, "").trim()).filter(str => str.length > 0);
+
+        console.log('Text input strings:', cleanedInputStrings);
         
         combinedSources.push(...cleanedInputStrings); // Add each cleaned paragraph as a separate string
         }
