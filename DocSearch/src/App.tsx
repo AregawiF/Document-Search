@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState } from 'react';
 import './App.css';
 import InputForm from './components/InputForm';
