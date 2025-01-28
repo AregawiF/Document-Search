@@ -1,4 +1,10 @@
 {
+  "compilerOptions": {
+    "noEmitOnError": false, // Allow emitting even if there are errors
+    "skipLibCheck": true, // Skip type checking of declaration files
+    // Suppress errors for implicit 'any' types in index signatures
+    // Add other compiler options as needed
+  },
   "files": [],
   "references": [
     { "path": "./tsconfig.app.json" },

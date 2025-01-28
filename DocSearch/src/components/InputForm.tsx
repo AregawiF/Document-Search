@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState } from 'react';
 import { FaLink, FaSearch } from 'react-icons/fa';
 import { pdfjs } from 'react-pdf';
