@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { FaLink, FaSearch } from 'react-icons/fa';
 import { pdfjs } from 'react-pdf';
-import { useEffect } from 'react';
 
 
-pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = `pdf.worker.min.mjs`;
 
 
 interface InputFormProps {
@@ -18,13 +17,6 @@ const InputForm = ({ onSearch } : InputFormProps) => {
   const [query, setQuery] = useState('');
   const [outputCount, setOutputCount] = useState(1);
   const [loading, setLoading] = useState(false); // Loading state
-
-  // useEffect(() => {
-  //     // Setting up the worker
-  //        pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
-
-  //   }, []);
-
 
     const readFileContent = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -77,7 +69,12 @@ const InputForm = ({ onSearch } : InputFormProps) => {
         let fileContent = '';
         if(file.type === 'application/pdf'){
               fileContent = await extractTextFromPDF(file);
+              const pdfContentStrings = fileContent.split('\n'); // Split content by paragraphs
+              const cleanedPdfContent = pdfContentStrings.map((str) => str.replace(/[^\x20-\x7E\n\\]/g, "").trim()).filter(str => str.length > 0);
 
+              combinedSources.push(...cleanedPdfContent); 
+              console.log('PDF content:', fileContent);
+              console.log('PDF content strings:', cleanedPdfContent);
 
         } else {
         const fileContent = await readFileContent(file);
