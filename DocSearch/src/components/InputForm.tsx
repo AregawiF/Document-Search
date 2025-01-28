@@ -27,34 +27,58 @@ const InputForm = ({ onSearch } : InputFormProps) => {
     });
   };
 
-  const extractTextFromPDF = async (file: File) => {
-       return new Promise<string>((resolve, reject) => {
+  const extractTextFromPDF = async (file: File): Promise<string[]> => {
+  return new Promise<string[]>(async (resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const loadingTask = pdfjs.getDocument(e.target?.result as string);
+        const pdf = await loadingTask.promise;
 
-        const reader = new FileReader();
-         reader.onload = async (e) => {
-          try {
-               const loadingTask = pdfjs.getDocument(e.target?.result as string);
-                 const pdf = await loadingTask.promise;
-
-              let allText = '';
-              for(let i = 1; i <= pdf.numPages; i++){
-                  const page = await pdf.getPage(i);
-                  const textContent = await page.getTextContent();
-                  const pageText = textContent.items.map(item => item.str).join('');
-                   allText += pageText;
-
-               }
-              resolve(allText);
-             }catch(error){
-                reject(error);
-                console.error("Failed to extract text from PDF", error);
-
-              }
+        let allText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          
+          // Join all text items from the page
+          const pageText = textContent.items.map((item) => (item as any).str).join(' ');
+          allText += pageText + '\n'; // Separate pages with a newline
         }
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    })
-   };
+
+        // Process and split the combined text into paragraphs
+        const paragraphs = allText
+          .split('\n') // Split by lines first
+          .map((line) => line.trim()) // Remove extra spaces
+          .filter((line) => line.length > 0); // Remove empty lines
+
+        // Combine lines into paragraphs based on capitalization, numbers, or bullet points
+        const groupedParagraphs = paragraphs.reduce((acc, line) => {
+          const startsWithNumberOrBullet = /^\d+\.|\•|\-/.test(line);
+          const startsWithCapital = /^[A-Z]/.test(line);
+
+          if (startsWithNumberOrBullet || startsWithCapital) {
+            acc.push(line);
+          } else if (acc.length > 0) {
+            acc[acc.length - 1] += ' ' + line; // Append to the previous paragraph
+          } else {
+            acc.push(line);
+          }
+
+          return acc;
+        }, [] as string[]);
+
+        resolve(groupedParagraphs);
+      } catch (error) {
+        reject(error);
+        console.error('Failed to extract text from PDF:', error);
+      }
+    };
+
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,11 +90,11 @@ const InputForm = ({ onSearch } : InputFormProps) => {
     if (file) {
       try {
 
-        let fileContent = '';
+        let fileContent: string[] | string = '';
+
         if(file.type === 'application/pdf'){
               fileContent = await extractTextFromPDF(file);
-              const pdfContentStrings = fileContent.split('\n'); // Split content by paragraphs
-              const cleanedPdfContent = pdfContentStrings.map((str) => str.replace(/[^\x20-\x7E\n\\]/g, "").trim()).filter(str => str.length > 0);
+              const cleanedPdfContent = (fileContent as string[]).map((str) => str.replace(/[^\x20-\x7E\n\\]/g, "").trim()).filter(str => str.length > 0);
 
               combinedSources.push(...cleanedPdfContent); 
               console.log('PDF content:', fileContent);
